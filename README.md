@@ -8,7 +8,7 @@ Install
 Need to build sqlite with implemented patch:
 
 1) Add monitor messages
------------------------
+
 slite3.c:
 ``` ...........
  #include <sqlite_monitor.h>   <+++
@@ -19,7 +19,7 @@ slite3.c:
  ..........                    
  ```
 
-2) Add directory with monitor files and config file:
+2) Add directory with monitor source files and config file:
 ./monitor/*
 ./monitor/sqlite_monitor.conf:
 ```
@@ -62,7 +62,7 @@ print_connect(...){MON_MSG("DB name %s", ...DBname); ...};
 start_connect(...){...};
 stop_connect(...){...};
 ```
-./monitor/sqlite_monitor_implement.sh:
+./monitor/install.sh:
 ```
 patch < -p1 ./header_include.patch
 patch < -p1 ./connection_include.patch
