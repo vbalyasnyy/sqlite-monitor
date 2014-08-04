@@ -1,8 +1,16 @@
 13751a13752,13753
 > #include "sqlite_monitor.h"
 > 
-123493a123496,123497
-> sqlite_obj_db_open_start();
+100262a100265
+> sqlite_obj_qe_start(zSql);
+100406a100410
+> sqlite_obj_qe_stop();
+121910a121915
+> sqlite_obj_db_close_start(db);
+121948a121954
+> sqlite_obj_db_close_stop();
+123493a123500,123501
+> sqlite_obj_db_open_start(zFilename);
 > 
-123745a123750
-> sqlite_obj_db_open_stop();
+123745a123754
+> sqlite_obj_db_open_stop(db);
