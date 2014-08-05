@@ -28,9 +28,11 @@ then
 fi
 
 echo ">>> TEST MONITOR..."
-cp -r ../monitor/ ./
-./sqlite3 ./empty.sqlite "SELECT * from  work_report;"
-cat /tmp/sqlite.log
 rm /tmp/sqlite.log
+cp -r ../monitor/ ./
+./sqlite3 ./empty.sqlite "SELECT * from test;" &
+./sqlite3 ./empty.sqlite "SELECT * from test;" &
+./sqlite3 ./empty.sqlite "SELECT * from test;" &
 
-#rm -rf ./sqlite-autoconf-${SQLITE_VERSION}*
+sleep 3
+cat /tmp/sqlite.log

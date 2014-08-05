@@ -13,6 +13,30 @@
 #include "time.h"
 
 /**********************************************/
+/* COMMON FN */
+/**********************************************/
+/* http://stackoverflow.com/a/22214304 */
+const char*
+get_process_name_by_pid(const int pid)
+{
+    char* name = (char*)calloc(1024,sizeof(char));
+    if(name){
+        sprintf(name, "/proc/%d/cmdline",pid);
+        FILE* f = fopen(name,"r");
+        if(f){
+            size_t size;
+            size = fread(name, sizeof(char), 1024, f);
+            if(size>0){
+                if('\n'==name[size-1])
+                    name[size-1]='\0';
+            }
+            fclose(f);
+        }
+    }
+    return name;
+}
+
+/**********************************************/
 /* LOGGER */
 /**********************************************/
 int
@@ -27,7 +51,7 @@ file_log(const char* fmt, ...){
         fp = fopen("/tmp/sqlilte.log", "a+");
 #endif
         if (fp != NULL) {
-                fprintf(fp, "%5d            ", getpid());
+                fprintf(fp, "%5d   *      * ", getpid());
                 vfprintf(fp, fmt, ap);
                 fprintf(fp, "\n");
                 fclose(fp);
@@ -39,7 +63,6 @@ file_log(const char* fmt, ...){
 
 int
 file_log_t(const char* fmt, ...){
-	static char color = 0;
 	static struct timeval prev_time;
 	static char init_time = 0;
 	if(!init_time) {
@@ -60,14 +83,7 @@ file_log_t(const char* fmt, ...){
         fp = fopen("/tmp/sqlilte.log", "a+");
 #endif
         if (fp != NULL) {
-		if(color) {
-			fprintf(fp, "\x1b[32m");
-			color = 0;
-		} else {
-			fprintf(fp, "\x1b[37m");
-			color = 1;
-		}
-                fprintf(fp, "%5d %3ld %6ld ", getpid(), (prev_time.tv_sec - now.tv_sec), (now.tv_usec - prev_time.tv_usec));
+                fprintf(fp, "\x1b[32m%5d %3ld %6ld\x1b[0m ", getpid(), (prev_time.tv_sec - now.tv_sec), (now.tv_usec - prev_time.tv_usec));
                 vfprintf(fp, fmt, ap);
                 fprintf(fp, "\n");
                 fclose(fp);
@@ -77,6 +93,7 @@ file_log_t(const char* fmt, ...){
 	prev_time = now;
         return 0;
 }
+
 #define MON_MSG(fmt, arg...) file_log(fmt,##arg)
 #define MON_MSG_T(fmt, arg...) file_log_t(fmt,##arg)
 
@@ -84,7 +101,8 @@ file_log_t(const char* fmt, ...){
 /* SQLITE OBJECTS */
 /**********************************************/
 
-void sqlite_obj_db_print(struct sqlite3 *db) {
+void
+sqlite_obj_db_print(struct sqlite3 *db) {
 	int i;
 	/* OS interface */
 	if(db->pVfs) {
@@ -108,28 +126,60 @@ void sqlite_obj_db_print(struct sqlite3 *db) {
 */	}
 }
 
-void sqlite_obj_db_open_start(const char *zFilename) {
-	MON_MSG_T("*** open %s database ***", zFilename);
+void
+sqlite_obj_db_open_start(const char *zFilename) {
+	const int pid = getpid();
+	char *name = get_process_name_by_pid(pid);
+	MON_MSG("PROCESS %s", name);
+	if(name)
+		free(name);
+	MON_MSG_T("DB open start %s", zFilename);
 }
 
-void sqlite_obj_db_open_stop(struct sqlite3 *db) {
+void
+sqlite_obj_db_open_stop(struct sqlite3 *db) {
 	sqlite_obj_db_print(db);
-	MON_MSG_T("*** finish open database ***");
+	MON_MSG_T("DB open stop");
 }
 
-void sqlite_obj_db_close_start(struct sqlite3 *db) {
-	MON_MSG_T("*** close %s database ***", sqlite3BtreeGetFilename(db->aDb[0].pBt));
+void
+sqlite_obj_db_close_start(struct sqlite3 *db) {
+	MON_MSG_T("DB close start %s", sqlite3BtreeGetFilename(db->aDb[0].pBt));
 }
 
-void sqlite_obj_db_close_stop(void) {
-	MON_MSG_T("*** finish close database ***");
+void
+sqlite_obj_db_close_stop(void) {
+	MON_MSG_T("DB close stop");
 }
 
-void sqlite_obj_qe_start(const char *zSql) {
-        MON_MSG_T("*** query %s ***", zSql);
+int monitor_qe_nested = 0;
+
+void
+sqlite_obj_qe_start(const char *zSql) {
+	monitor_qe_nested++;
+	char *query = NULL;
+
+	/* replace in query string "new line" -> "space" */
+	{
+		int i;
+		int len = strlen(zSql);
+		query = malloc(len+1);
+		for(i=0; i<=len; i++) {
+			if(zSql[i]!='\n')
+				query[i] = zSql[i];
+			else
+				query[i] = ' ';
+		}
+	}
+
+	MON_MSG_T("QUERY start %*.s-> %s", monitor_qe_nested*2, " ", query);
+	if(query)
+		free(query);
 }
 
-void sqlite_obj_qe_stop(void) {
-        MON_MSG_T("*** finish query ***");
+void
+sqlite_obj_qe_stop(void) {
+	MON_MSG_T("QUERY stop  %*.s<-", monitor_qe_nested*2, " ");
+	monitor_qe_nested--;
 }
 
