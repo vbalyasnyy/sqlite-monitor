@@ -13,7 +13,7 @@ echo ">>> SETUP MONITOR..."
 cd sqlite-autoconf-${SQLITE_VERSION}/
 cp -r ../monitor/ ./
 cd ./monitor/
-cp ./empty.sqlite ../
+cp ./db*.sqlite ../
 ./install.sh
 
 echo ">>> TRY TO BUILD SQLITE WITH MONITOR..."
@@ -30,9 +30,22 @@ fi
 echo ">>> TEST MONITOR..."
 rm /tmp/sqlite.log
 cp -r ../monitor/ ./
-./sqlite3 ./empty.sqlite "SELECT * from test;" &
-./sqlite3 ./empty.sqlite "SELECT * from test;" &
-./sqlite3 ./empty.sqlite "SELECT * from test;" &
+./sqlite3 ./db1.sqlite "SELECT * from test;" &
+./sqlite3 ./db2.sqlite "SELECT * from test;" &
+./sqlite3 ./db3.sqlite "SELECT * from test;" &
+#3
+./sqlite3 ./db1.sqlite "SELECT * from test;" &
+./sqlite3 ./db2.sqlite "SELECT * from test;" &
+./sqlite3 ./db3.sqlite "SELECT * from test;" &
+#6
+./sqlite3 ./db1.sqlite "SELECT * from test;" &
+./sqlite3 ./db2.sqlite "SELECT * from test;" &
+./sqlite3 ./db3.sqlite "SELECT * from test;" &
+#9
+./sqlite3 ./db1.sqlite "SELECT * from test;" &
+./sqlite3 ./db2.sqlite "SELECT * from test;" &
+./sqlite3 ./db3.sqlite "SELECT * from test;" &
+#12
 
 sleep 3
 cat /tmp/sqlite.log

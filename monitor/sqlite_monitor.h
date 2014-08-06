@@ -51,7 +51,7 @@ file_log(const char* fmt, ...){
         fp = fopen("/tmp/sqlilte.log", "a+");
 #endif
         if (fp != NULL) {
-                fprintf(fp, "%5d   *      * ", getpid());
+                fprintf(fp, "%5d          * ", getpid());
                 vfprintf(fp, fmt, ap);
                 fprintf(fp, "\n");
                 fclose(fp);
@@ -83,7 +83,8 @@ file_log_t(const char* fmt, ...){
         fp = fopen("/tmp/sqlilte.log", "a+");
 #endif
         if (fp != NULL) {
-                fprintf(fp, "\x1b[32m%5d %3ld %6ld\x1b[0m ", getpid(), (prev_time.tv_sec - now.tv_sec), (now.tv_usec - prev_time.tv_usec));
+		double diff = (now.tv_sec * 1000000 + now.tv_usec) - (prev_time.tv_sec * 1000000 + prev_time.tv_usec);
+                fprintf(fp, "\x1b[32m%5d %10.6f\x1b[0m ", getpid(), diff/1000000);
                 vfprintf(fp, fmt, ap);
                 fprintf(fp, "\n");
                 fclose(fp);
@@ -130,10 +131,10 @@ void
 sqlite_obj_db_open_start(const char *zFilename) {
 	const int pid = getpid();
 	char *name = get_process_name_by_pid(pid);
-	MON_MSG("PROCESS %s", name);
+	MON_MSG_T("PROCESS %s", name);
+	MON_MSG_T("DB open start %s", zFilename);
 	if(name)
 		free(name);
-	MON_MSG_T("DB open start %s", zFilename);
 }
 
 void
@@ -165,21 +166,32 @@ sqlite_obj_qe_start(const char *zSql) {
 		int len = strlen(zSql);
 		query = malloc(len+1);
 		for(i=0; i<=len; i++) {
-			if(zSql[i]!='\n')
+			if(zSql[i]!='\n') {
 				query[i] = zSql[i];
-			else
+			} else {
 				query[i] = ' ';
+			}
 		}
 	}
 
-	MON_MSG_T("QUERY start %*.s-> %s", monitor_qe_nested*2, " ", query);
-	if(query)
+	if(monitor_qe_nested > 1) {
+		MON_MSG("QUERY start %*.s-> %s", monitor_qe_nested*2, " ", query);
+	} else {
+		MON_MSG_T("QUERY start %*.s-> %s", monitor_qe_nested*2, " ", query);
+	}
+
+	if(query) {
 		free(query);
+	}
 }
 
 void
 sqlite_obj_qe_stop(void) {
-	MON_MSG_T("QUERY stop  %*.s<-", monitor_qe_nested*2, " ");
+	if(monitor_qe_nested > 1) {
+		MON_MSG("QUERY stop  %*.s<-", monitor_qe_nested*2, " ");
+	} else {
+		MON_MSG_T("QUERY stop  %*.s<-", monitor_qe_nested*2, " ");
+	}
 	monitor_qe_nested--;
 }
 
