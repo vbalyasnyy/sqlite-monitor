@@ -10,6 +10,7 @@ then
 fi
 
 ## COPY SOURCE OF MONITOR
+cp ./monitor/monitor.h ./
 cp ./monitor/sqlite_monitor.h ./
 
 ## PATCHED SQLITE SOURCES
