@@ -11,6 +11,7 @@
 						/* 2. Time of instruction */
 
 #include "time.h"
+#include "stdlib.h"
 
 /**********************************************/
 /* COMMON FN */
@@ -84,7 +85,8 @@ file_log_t(const char* fmt, ...){
 #endif
         if (fp != NULL) {
 		double diff = (now.tv_sec * 1000000 + now.tv_usec) - (prev_time.tv_sec * 1000000 + prev_time.tv_usec);
-                fprintf(fp, "\x1b[32m%5d %10.6f\x1b[0m ", getpid(), diff/1000000);
+                fprintf(fp, "%5d %10.6f ", getpid(), diff/1000000);
+                //fprintf(fp, "\x1b[32m%5d %10.6f\x1b[0m ", getpid(), diff/1000000);
                 vfprintf(fp, fmt, ap);
                 fprintf(fp, "\n");
                 fclose(fp);

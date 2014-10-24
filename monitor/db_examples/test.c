@@ -1,45 +1,59 @@
 #include <stdio.h>
+#include "sqlite3.h"
+#include <string.h>
 #include <stdlib.h>
-#include <sqlite3.h> 
 
-static int callback(void *data, int argc, char **argv, char **azColName){
-   int i;
-   fprintf(stderr, "%s: ", (const char*)data);
-   for(i=0; i<argc; i++){
-      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-   }
-   printf("\n");
-   return 0;
-}
+char * sql = "select field1,field2,field3 from test";
+char* dbname;
+
+sqlite3 * db;
+sqlite3_stmt *stmt;
+
+int date;
+char *description;
+char *venue;
 
 int main(int argc, char* argv[])
 {
-   sqlite3 *db;
-   char *zErrMsg = 0;
-   int rc;
-   char *sql;
-   const char* data = "Callback function called";
+	if( argc<0 ) {
+		printf("Usage: ./%s dbname\n", argv[0]);
+		return 1;
+	} else
+		dbname = argv[1];
 
-   /* Open database */
-   rc = sqlite3_open("db1.sqlite", &db);
-   if( rc ){
-      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-      exit(0);
-   }else{
-      fprintf(stderr, "Opened database successfully\n");
-   }
+	/* open the database */
+	int result=sqlite3_open(dbname,&db) ;
+	if (result != SQLITE_OK) {
+		printf("Failed to open database %s\n\r",sqlite3_errstr(result)) ;
+		sqlite3_close(db) ;
+		return 1;
+	}
 
-   /* Create SQL statement */
-   sql = "SELECT COUNT(*) from test";
+	/* prepare the sql, leave stmt ready for loop */
+	result = sqlite3_prepare_v2(db, sql, strlen(sql)+1, &stmt, NULL) ;
+	if (result != SQLITE_OK) {
+		printf("Failed to prepare database %s\n\r",sqlite3_errstr(result)) ;
+		sqlite3_close(db) ;
+		return 1;
+        }
 
-   /* Execute SQL statement */
-   rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);
-   if( rc != SQLITE_OK ){
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      sqlite3_free(zErrMsg);
-   }else{
-      fprintf(stdout, "Operation done successfully\n");
-   }
-   sqlite3_close(db);
-   return 0;
+	/* allocate memory for decsription and venue */
+	description = (char *)malloc(100) ;
+	venue = (char *)malloc(100) ;
+
+	/* loop reading each row until step returns anything other than SQLITE_ROW */
+	do {
+		result = sqlite3_step (stmt) ;
+		if (result == SQLITE_ROW) { /* can read data */
+			date = sqlite3_column_int(stmt,0) ;
+			strcpy(description, (char *)sqlite3_column_text(stmt,1)) ;
+			strcpy(venue, (char *)sqlite3_column_text(stmt,2)) ;
+		}
+	} while (result == SQLITE_ROW) ;
+
+	sqlite3_close(db) ;
+	free(description) ;
+	free(venue) ;
+	return 0;
 }
+
