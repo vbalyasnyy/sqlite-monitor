@@ -1,3 +1,5 @@
+#export WRAPPER_GEN_FN_LIST_NAME
+
 SCRIPT_NAME=$0
 
 function usage {
@@ -37,6 +39,7 @@ function parse_fn {
 						};
 					      }')
 	fi
+	WRAPPER_GEN_FN_LIST_NAME="${WRAPPER_GEN_FN_LIST_NAME} ${FN_NAME}"
 }
 
 # Check number of arguments
@@ -50,51 +53,87 @@ if [ ! -s $1 ]; then
 	usage
 fi
 
+function run_time_wrap {
+	echo "" > ${WRAP_FL_NAME}
+	echo "#define _GNU_SOURCE" >> ${WRAP_FL_NAME}
+	echo "#include <stdio.h>" >> ${WRAP_FL_NAME}
+	echo "#include <dlfcn.h>" >> ${WRAP_FL_NAME}
+	echo "#include <stdarg.h>" >> ${WRAP_FL_NAME}
+	echo "#include \"monitor.h\"" >> ${WRAP_FL_NAME}
+	echo "#include \"sqlite.h\"" >> ${WRAP_FL_NAME}
+	echo "" >> ${WRAP_FL_NAME}
+
+	while read line
+	do
+		parse_fn "${line}"
+
+	#	echo "($FN_OUTPUT) ($FN_NAME) ($FN_INPUT)" >> ${WRAP_FL_NAME}
+
+		echo "$FN_OUTPUT $FN_NAME($FN_INPUT) {"  >> ${WRAP_FL_NAME}
+		if [ "x$FN_OUTPUT" != "xvoid" ]; then
+			echo "	$FN_OUTPUT ret;" >> ${WRAP_FL_NAME}
+		fi
+		echo "	MON_MSG_T(0, \"$FN_NAME start\");" >> ${WRAP_FL_NAME}
+		echo "	$FN_OUTPUT (*real_$FN_NAME)($FN_INPUT_VAR_TYPE) = dlsym(RTLD_NEXT, \"$FN_NAME\");" >> ${WRAP_FL_NAME}
+		if [ "x$FN_OUTPUT" != "xvoid" ]; then
+			echo "	ret = real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
+		else
+			echo "	real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
+		fi
+		echo "	MON_MSG_T(1, \"$FN_NAME stop\");" >> ${WRAP_FL_NAME}
+		if [ "x$FN_OUTPUT" != "xvoid" ]; then
+			echo "	return ret;" >> ${WRAP_FL_NAME}
+		fi
+		echo "}" >> ${WRAP_FL_NAME}
+		echo "" >> ${WRAP_FL_NAME}
+	done < $1;
+}
+
+function link_time_wrap {
+	echo "" > ${WRAP_FL_NAME}
+	echo "#include <stdio.h>" >> ${WRAP_FL_NAME}
+	echo "#include <stdarg.h>" >> ${WRAP_FL_NAME}
+	echo "#include \"monitor.h\"" >> ${WRAP_FL_NAME}
+	echo "#include \"sqlite.h\"" >> ${WRAP_FL_NAME}
+	echo "" >> ${WRAP_FL_NAME}
+
+	while read line
+	do
+		parse_fn "${line}"
+
+	#	echo "($FN_OUTPUT) ($FN_NAME) ($FN_INPUT)" >> ${WRAP_FL_NAME}
+
+		echo "$FN_OUTPUT __wrap_$FN_NAME($FN_INPUT) {"  >> ${WRAP_FL_NAME}
+		if [ "x$FN_OUTPUT" != "xvoid" ]; then
+			echo "	$FN_OUTPUT ret;" >> ${WRAP_FL_NAME}
+		fi
+		echo "	MON_MSG_T(0, \"$FN_NAME start\");" >> ${WRAP_FL_NAME}
+		if [ "x$FN_OUTPUT" != "xvoid" ]; then
+			echo "	ret = __real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
+		else
+			echo "	__real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
+		fi
+		echo "	MON_MSG_T(1, \"$FN_NAME stop\");" >> ${WRAP_FL_NAME}
+		if [ "x$FN_OUTPUT" != "xvoid" ]; then
+			echo "	return ret;" >> ${WRAP_FL_NAME}
+		fi
+		echo "}" >> ${WRAP_FL_NAME}
+		echo "" >> ${WRAP_FL_NAME}
+	done < $1;
+}
+
+WRAP_FL_NAME="fwrap.c"
 #Check second argument
 if [ "x$2" == "xrun_time" ]; then
-	WRAP_FL_HEADER="#define _GNU_SOURCE\n#include <stdio.h>\n#include <dlfcn.h>\n\n"
+	run_time_wrap $1
 else
 	if [ "x$2" == "xlink_time" ]; then
-		WRAP_FL_HEADER="#include <stdio.h>\n\n"
+		link_time_wrap $1
 	else
-		echo "ERROR: Bad time wrapping: $2."
+		echo "ERROR: Bad type of wrapping: $2."
 		usage
 	fi
 fi
 
-WRAP_FL_NAME="fwrap.c"
-
-echo "" > ${WRAP_FL_NAME}
-echo "#define _GNU_SOURCE" >> ${WRAP_FL_NAME}
-echo "#include <stdio.h>" >> ${WRAP_FL_NAME}
-echo "#include <dlfcn.h>" >> ${WRAP_FL_NAME}
-echo "#include <stdarg.h>" >> ${WRAP_FL_NAME}
-echo "#include \"monitor.h\"" >> ${WRAP_FL_NAME}
-echo "#include \"sqlite.h\"" >> ${WRAP_FL_NAME}
-echo "" >> ${WRAP_FL_NAME}
-
-while read line
-do
-	parse_fn "${line}"
-
-#	echo "($FN_OUTPUT) ($FN_NAME) ($FN_INPUT)" >> ${WRAP_FL_NAME}
-
-	echo "$FN_OUTPUT $FN_NAME($FN_INPUT) {"  >> ${WRAP_FL_NAME}
-	if [ "x$FN_OUTPUT" != "xvoid" ]; then
-		echo "	$FN_OUTPUT ret;" >> ${WRAP_FL_NAME}
-	fi
-	echo "	MON_MSG_T(0, \"$FN_NAME start\");" >> ${WRAP_FL_NAME}
-	echo "	$FN_OUTPUT (*real_$FN_NAME)($FN_INPUT_VAR_TYPE) = dlsym(RTLD_NEXT, \"$FN_NAME\");" >> ${WRAP_FL_NAME}
-	if [ "x$FN_OUTPUT" != "xvoid" ]; then
-		echo "	ret = real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
-	else
-		echo "	real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
-	fi
-	echo "	MON_MSG_T(1, \"$FN_NAME stop\");" >> ${WRAP_FL_NAME}
-	if [ "x$FN_OUTPUT" != "xvoid" ]; then
-		echo "	return ret;" >> ${WRAP_FL_NAME}
-	fi
-	echo "}" >> ${WRAP_FL_NAME}
-	echo "" >> ${WRAP_FL_NAME}
-done < $1;
+export WRAPPER_GEN_FN_LIST_NAME
 

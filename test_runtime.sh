@@ -4,10 +4,11 @@ echo "# >Build sqlite application example..."
 echo "# >Generate fwrap.c..."
 cd ./monitor/
 rm fwrap.c
-./wrapper_gen.sh API.txt run_time
+. ./wrapper_gen.sh API.txt run_time
 
 echo "# >Generate shared lib..."
 rm libfwrap.so 
+rm fwrap.o
 gcc -fPIC -rdynamic -c fwrap.c
 gcc -shared -o libfwrap.so fwrap.o -lc -ldl
 
