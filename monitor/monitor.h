@@ -63,7 +63,7 @@ file_log(const char* fmt, ...){
 }
 
 int
-file_log_t(const char* fmt, ...){
+file_log_t(int msg, const char* fmt, ...){
 	static struct timeval prev_time;
 	static char init_time = 0;
 	if(!init_time) {
@@ -74,29 +74,33 @@ file_log_t(const char* fmt, ...){
 	struct timeval now;
 	gettimeofday(&now, NULL);
 
-        va_list ap;
-        va_start(ap, fmt);
+	if(msg) {
+		va_list ap;
+		va_start(ap, fmt);
 
-        FILE *fp;
+		FILE *fp;
 #ifdef MON_LOG_FILE_NAME
-        fp = fopen(MON_LOG_FILE_NAME, "a+");
+		fp = fopen(MON_LOG_FILE_NAME, "a+");
 #else
-        fp = fopen("/tmp/sqlilte.log", "a+");
+		fp = fopen("/tmp/sqlilte.log", "a+");
 #endif
-        if (fp != NULL) {
-		double diff = (now.tv_sec * 1000000 + now.tv_usec) - (prev_time.tv_sec * 1000000 + prev_time.tv_usec);
-                fprintf(fp, "%5d %10.6f ", getpid(), diff/1000000);
-                //fprintf(fp, "\x1b[32m%5d %10.6f\x1b[0m ", getpid(), diff/1000000);
-                vfprintf(fp, fmt, ap);
-                fprintf(fp, "\n");
-                fclose(fp);
-        }
+		if (fp != NULL) {
+			double diff =
+				(now.tv_sec * 1000000 + now.tv_usec) -
+				(prev_time.tv_sec * 1000000 + prev_time.tv_usec);
+			fprintf(fp, "%5d %10.6f ", getpid(), diff/1000000);
+			//fprintf(fp, "\x1b[32m%5d %10.6f\x1b[0m ", getpid(), diff/1000000);
+			vfprintf(fp, fmt, ap);
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 
-        va_end(ap);
+		va_end(ap);
+	}
 	prev_time = now;
         return 0;
 }
 
 #define MON_MSG(fmt, arg...) file_log(fmt,##arg)
-#define MON_MSG_T(fmt, arg...) file_log_t(fmt,##arg)
+#define MON_MSG_T(msg, fmt, arg...) file_log_t(msg, fmt, ##arg)
 

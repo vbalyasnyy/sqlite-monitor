@@ -83,14 +83,14 @@ do
 	if [ "x$FN_OUTPUT" != "xvoid" ]; then
 		echo "	$FN_OUTPUT ret;" >> ${WRAP_FL_NAME}
 	fi
-	echo "	MON_MSG_T(\"$FN_NAME start\");" >> ${WRAP_FL_NAME}
+	echo "	MON_MSG_T(0, \"$FN_NAME start\");" >> ${WRAP_FL_NAME}
 	echo "	$FN_OUTPUT (*real_$FN_NAME)($FN_INPUT_VAR_TYPE) = dlsym(RTLD_NEXT, \"$FN_NAME\");" >> ${WRAP_FL_NAME}
 	if [ "x$FN_OUTPUT" != "xvoid" ]; then
 		echo "	ret = real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
 	else
 		echo "	real_$FN_NAME($FN_INPUT_VAR_NAME);" >> ${WRAP_FL_NAME}
 	fi
-	echo "	MON_MSG_T(\"$FN_NAME stop\");" >> ${WRAP_FL_NAME}
+	echo "	MON_MSG_T(1, \"$FN_NAME stop\");" >> ${WRAP_FL_NAME}
 	if [ "x$FN_OUTPUT" != "xvoid" ]; then
 		echo "	return ret;" >> ${WRAP_FL_NAME}
 	fi

@@ -33,8 +33,8 @@ void
 sqlite_obj_db_open_start(const char *zFilename) {
 	const int pid = getpid();
 	char *name = get_process_name_by_pid(pid);
-	MON_MSG_T("PROCESS %s", name);
-	MON_MSG_T("DB open start %s", zFilename);
+	MON_MSG_T(1, "PROCESS %s", name);
+	MON_MSG_T(1, "DB open start %s", zFilename);
 	if(name)
 		free(name);
 }
@@ -42,17 +42,17 @@ sqlite_obj_db_open_start(const char *zFilename) {
 void
 sqlite_obj_db_open_stop(struct sqlite3 *db) {
 	sqlite_obj_db_print(db);
-	MON_MSG_T("DB open stop");
+	MON_MSG_T(1, "DB open stop");
 }
 
 void
 sqlite_obj_db_close_start(struct sqlite3 *db) {
-	MON_MSG_T("DB close start %s", sqlite3BtreeGetFilename(db->aDb[0].pBt));
+	MON_MSG_T(1, "DB close start %s", sqlite3BtreeGetFilename(db->aDb[0].pBt));
 }
 
 void
 sqlite_obj_db_close_stop(void) {
-	MON_MSG_T("DB close stop");
+	MON_MSG_T(1, "DB close stop");
 }
 
 int monitor_qe_nested = 0;
@@ -79,7 +79,7 @@ sqlite_obj_qe_start(const char *zSql) {
 	if(monitor_qe_nested > 1) {
 		MON_MSG("QUERY start %*.s-> %s", monitor_qe_nested*2, " ", query);
 	} else {
-		MON_MSG_T("QUERY start %*.s-> %s", monitor_qe_nested*2, " ", query);
+		MON_MSG_T(1, "QUERY start %*.s-> %s", monitor_qe_nested*2, " ", query);
 	}
 
 	if(query) {
@@ -92,7 +92,7 @@ sqlite_obj_qe_stop(void) {
 	if(monitor_qe_nested > 1) {
 		MON_MSG("QUERY stop  %*.s<-", monitor_qe_nested*2, " ");
 	} else {
-		MON_MSG_T("QUERY stop  %*.s<-", monitor_qe_nested*2, " ");
+		MON_MSG_T(1, "QUERY stop  %*.s<-", monitor_qe_nested*2, " ");
 	}
 	monitor_qe_nested--;
 }

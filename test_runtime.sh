@@ -20,11 +20,16 @@ rm /tmp/sqlite.log
 LD_LIBRARY_PATH=. LD_PRELOAD=../libfwrap.so ./appl "test1.sqlite"&
 LD_LIBRARY_PATH=. LD_PRELOAD=../libfwrap.so ./appl "test2.sqlite"&
 LD_LIBRARY_PATH=. LD_PRELOAD=../libfwrap.so ./appl "test3.sqlite"&
+
 if [ "x$?" == "x0" ]; then
 	echo "# >Look's GOOD..."
 else
 	echo "# >FAIL..."
 	exit 1
 fi
+
+cd ..
+./drawer_log.sh
+
 sleep 2
-cat /tmp/sqlite.log | less -r
+#cat /tmp/sqlite.log | less -r
