@@ -25,14 +25,18 @@ rm ${LOG_FILE}.*
 
 #create temp files for every PID
 #create gnuplot command to draw graphic
-GNUPLOT_CMD="plot"
 for PID in `cat ${LOG_FILE} | awk '{print $1}'| sort | uniq`
 do
 #	echo PID=$PID
 	LOG_FILE_BY_PID=${LOG_FILE}.${PID}
 	cat ${LOG_FILE} | awk -v pid="${PID}" '{if($1==pid) print $0; else print $1}' > ${LOG_FILE_BY_PID}
-	GNUPLOT_CMD="${GNUPLOT_CMD} \"${LOG_FILE_BY_PID}\" using 0:2:xtic(3) t \"PID=${PID}\" with boxes,"
+	if [ -n "$GNUPLOT_CMD" ]; then
+		GNUPLOT_CMD="${GNUPLOT_CMD}, \"${LOG_FILE_BY_PID}\" using 0:2:xtic(3) t \"PID=${PID}\" with boxes "
+	else
+		GNUPLOT_CMD=" \"${LOG_FILE_BY_PID}\" using 0:2:xtic(3) t \"PID=${PID}\" with boxes"
+	fi
 done
+GNUPLOT_CMD="plot $GNUPLOT_CMD"
 
 #size of PNG FILE
 LOG_FILE_SIZE=`cat ${LOG_FILE} | wc -l`
